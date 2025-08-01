@@ -10,6 +10,10 @@ on:
         required: false
         default: 'latest'
 
+permissions:
+  contents: write
+  actions: read
+
 env:
   LANG: en_US.UTF-8
   LC_ALL: en_US.UTF-8
@@ -116,7 +120,7 @@ jobs:
           retention-days: 90
       
       - name: Create release and upload assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         with:
           tag_name: ${{ github.event.release.tag_name || github.event.inputs.version || 'latest' }}
