@@ -12,8 +12,12 @@ config_version=5
 
 config/name="GodotSlangDemo"
 run/main_scene="uid://b3mtpi2f67w6n"
-config/features=PackedStringArray("4.4")
+config/features=PackedStringArray("4.5")
 
 [dotnet]
 
 project/assembly_name="GodotSlangDemo"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_slang_importer/plugin.cfg")

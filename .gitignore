@@ -20,9 +20,10 @@ __pycache__/
 
 # Generated files to ignore
 demo/.godot
-demo/bin
+demo/bin/linux.x86_64
 demo/shader.glsl
 demo/shader.glsl.import
 
 # Keep documentation
 src/doc_data_godot_slang.gen.h
+demo/.idea/
