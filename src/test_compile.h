@@ -43,7 +43,7 @@ public:
      *
      * @note Output:
      * - Generates a .glsl file with Godot-compatible annotations
-     * - Includes generation timestamp and source information
+     * - Includes generation timestamp and shader type information
      * - Targets OpenGL 4.6 GLSL specification
      */
     void compile_slang_to_glsl(const String &filename);

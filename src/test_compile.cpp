@@ -146,9 +146,7 @@ void TestCompile::compile_slang_to_glsl(const String &filename)
                               String::num_int64(datetime["second"]).pad_zeros(2);
 
         // Add generation comment with dynamic date/time and shader type
-        String slang_source = filename + String(".slang");
         file->store_string("// File generated from godot-slang on " + current_date + " at " + current_time + "\n");
-        file->store_string("// Original source: " + slang_source + "\n");
         file->store_string("// Shader type: GLSL Compute Shader (OpenGL 4.6)\n");
         file->store_string("#[compute]\n\n");
 
