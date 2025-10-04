@@ -1,6 +1,15 @@
 # Godot Slang
 
-Integration of the Slang shader language into Godot.
+Run [Slang](https://shader-slang.org/) shaders directly in Godot
+
+- No runtime dependencies
+- Automatically updates when the Slang shader changes
+
+# Installation
+1. Dowload the latest release
+2. Copy the bin and addons/godot_slang_importer in the addons folder in your project
+3. From the top menu open the Project/Project Settings page. Navigate to the Plugins tab and activate the Godot Slang Importer Plugin
+4. A corresponding .glsl file will be created for each .slang file
 
 **WORK IN PROGRESS!**
 
