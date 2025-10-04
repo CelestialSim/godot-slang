@@ -4,7 +4,7 @@ import sys
 
 LIB_NAME = "libgodot-slang" # Must have "lib" as prefix
 
-BUILD_PATH = "demo"
+BUILD_PATH = "demo/addons/godot_slang_importer"
 
 SLANG_DEBUG_INCLUDE_PATH = "slang/build/RelWithDebInfo/include/"
 SLANG_DEBUG_LIB_PATHS = [
@@ -49,10 +49,8 @@ if env["target"] == "template_release":
     env.Append(CPPPATH=SLANG_RELEASE_INCLUDE_PATH)
     env.Append(LIBPATH=SLANG_RELEASE_LIB_PATHS)
 else:
-    env.Append(CPPPATH=SLANG_RELEASE_INCLUDE_PATH)
-    env.Append(LIBPATH=SLANG_RELEASE_LIB_PATHS)
-    # env.Append(CPPPATH=SLANG_DEBUG_INCLUDE_PATH)
-    # env.Append(LIBPATH=SLANG_DEBUG_LIB_PATHS)
+    env.Append(CPPPATH=SLANG_DEBUG_INCLUDE_PATH)
+    env.Append(LIBPATH=SLANG_DEBUG_LIB_PATHS)
 env.Append(LIBS=SLANG_LIBS)
 
 file_name = LIB_NAME + "." + env["target"][9:] # Trim "template_"

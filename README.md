@@ -6,8 +6,8 @@ Run [Slang](https://shader-slang.org/) shaders directly in Godot
 - Automatically updates when the Slang shader changes
 
 # Installation
-1. Dowload the latest release
-2. Copy the bin and addons/godot_slang_importer in your project
+1. Download the latest release
+2. Copy the `addons/godot_slang_importer` folder (which includes the bin directory) to your project's `addons` folder
 3. From the top menu open the Project/Project Settings page. Navigate to the Plugins tab and activate the Godot Slang Importer Plugin
 4. A corresponding .glsl file will be created for each .slang file
 
@@ -35,12 +35,16 @@ cmake \
   -DCMAKE_C_COMPILER=my-arch-gcc \
   -DCMAKE_CXX_COMPILER=my-arch-g++
 
-# Build slang library
+# Build slang library for release
 cmake --build --preset release --target slang
+
+# Build slang library for debug
+cmake --build --preset default --target slang
 ```
 
-2. Build the project
+2. Build the project (both debug and release)
 ```
+scons target=template_debug
 scons target=template_release
 ```
 
