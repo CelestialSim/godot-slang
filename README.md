@@ -6,8 +6,8 @@ Run [Slang](https://shader-slang.org/) shaders directly in Godot
 - Automatically updates when the Slang shader changes
 
 # Installation
-1. Dowload the latest release
-2. Copy the bin and addons/godot_slang_importer in your project
+1. Download the latest release
+2. Copy the `addons/godot_slang_importer` folder (which includes the bin directory) to your project's `addons` folder
 3. From the top menu open the Project/Project Settings page. Navigate to the Plugins tab and activate the Godot Slang Importer Plugin
 4. A corresponding .glsl file will be created for each .slang file
 
@@ -15,32 +15,10 @@ Run [Slang](https://shader-slang.org/) shaders directly in Godot
 
 ## How to build for Linux
 
-1. Build Slang like this:
-```
-# Build the generators
-# You need a recent CMake verstion
-cd slang
-cmake --workflow --preset generators --fresh
-mkdir build-platform-generators
-cmake --install build --config Release --prefix ../build-platform-generators --component generators
-
-# Set up compiling environment
-cmake \
-  --preset default \
-  --fresh \
-  -DSLANG_LIB_TYPE=STATIC \
-  -DSLANG_GENERATORS_PATH=../build-platform-generators/bin \
-  -Dwhatever-other-necessary-options-for-your-cross-build \
-  # for example \
-  -DCMAKE_C_COMPILER=my-arch-gcc \
-  -DCMAKE_CXX_COMPILER=my-arch-g++
-
-# Build slang library
-cmake --build --preset release --target slang
-```
-
-2. Build the project
-```
+2. Build the project (both debug and release)
+```bash
+scons target=template_debug
+# or
 scons target=template_release
 ```
 

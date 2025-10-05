@@ -14,8 +14,7 @@ The Godot Slang extension allows you to write and compile Slang shaders directly
 
 ## Contents
 
-- `bin/` - Contains the compiled GDExtension binaries
-- `addons/godot_slang_importer` folder contains the EditorImportPlugin that can be activated to automatically import slang shaders in the project
+- `addons/godot_slang_importer/` - Contains the EditorImportPlugin and the compiled GDExtension binaries in the `bin/` subdirectory
 - `scenes/` - Example scenes demonstrating Slang shader usage
 - `Scripts/` - Example scripts showing how to work with Slang shaders
 - `project.godot` - Godot project file

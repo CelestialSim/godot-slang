@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 import os
 import sys
+import subprocess
+import editor_builders
 
 LIB_NAME = "libgodot-slang" # Must have "lib" as prefix
 
-BUILD_PATH = "demo"
+BUILD_PATH = "demo/addons/godot_slang_importer"
 
-SLANG_DEBUG_INCLUDE_PATH = "slang/build/RelWithDebInfo/include/"
+SLANG_DEBUG_INCLUDE_PATH = "slang/build/Debug/include/"
 SLANG_DEBUG_LIB_PATHS = [
-    "slang/build/RelWithDebInfo/lib/",
-    "slang/build/external/miniz/RelWithDebInfo/",
-    "slang/build/external/lz4/build/cmake/RelWithDebInfo/"
+    "slang/build/Debug/lib/",
+    "slang/build/external/miniz/Debug/",
+    "slang/build/external/lz4/build/cmake/Debug/"
 ]
 
 SLANG_RELEASE_INCLUDE_PATH = "slang/build/Release/include/"
@@ -20,10 +22,43 @@ SLANG_RELEASE_LIB_PATHS = [
     "slang/build/external/lz4/build/cmake/Release/"
 ]
 
-SLANG_LIBS = ["slang", "core", "compiler-core", "miniz", "lz4"]
+SLANG_LIBS = ["slang", "compiler-core", "core",  "miniz", "lz4"]
+
+
+def build_slang(target, source, env):
+    print(f"Environment target: {env['target']}")
+    """Build Slang library using CMake"""
+    slang_dir = "slang"
+    build_type = "release" if env["target"] == "template_release" else "debug"
+    
+    # Step 1: Configure with CMake (only if not already configured)
+    configure_file = os.path.join(slang_dir, "build", "CMakeCache.txt")
+    if not os.path.exists(configure_file):
+        print(f"Configuring Slang with CMake (STATIC library)...")
+        configure_cmd = ["cmake", "--preset", "default", "-DSLANG_LIB_TYPE=STATIC"]
+        result = subprocess.run(configure_cmd, cwd=slang_dir)
+        if result.returncode != 0:
+            print("Error: CMake configuration failed!")
+            return result.returncode
+    
+    # Step 2: Build with CMake
+    print(f"Building Slang library ({build_type})...")
+    build_cmd = ["cmake", "--build", "--preset", build_type, "--target", "slang"]
+    result = subprocess.run(build_cmd, cwd=slang_dir)
+    if result.returncode != 0:
+        print("Error: CMake build failed!")
+        return result.returncode
+    
+    print(f"Slang library built successfully ({build_type})")
+    return None
 
 
 env = SConscript("godot-cpp/SConstruct")
+
+# Build Slang library first
+slang_marker = "slang/.slang_built"
+slang_build = env.Command(slang_marker, [], env.Action(build_slang, "Building Slang library..."))
+env.AlwaysBuild(slang_build)
 
 # For reference:
 # - CCFLAGS are compilation flags shared between C and C++
@@ -37,8 +72,11 @@ env = SConscript("godot-cpp/SConstruct")
 env.Append(CPPPATH=["src/"])
 sources = Glob("src/*.cpp")
 
-import editor_builders
+# Make source files depend on Slang build (so headers are available during compilation)
+for src in sources:
+    env.Depends(src, slang_build)
 
+# Build docs
 docs_xml = []
 docs_xml += Glob("src/doc_classes/*.xml")
 docs_xml = sorted(docs_xml)
@@ -49,10 +87,8 @@ if env["target"] == "template_release":
     env.Append(CPPPATH=SLANG_RELEASE_INCLUDE_PATH)
     env.Append(LIBPATH=SLANG_RELEASE_LIB_PATHS)
 else:
-    env.Append(CPPPATH=SLANG_RELEASE_INCLUDE_PATH)
-    env.Append(LIBPATH=SLANG_RELEASE_LIB_PATHS)
-    # env.Append(CPPPATH=SLANG_DEBUG_INCLUDE_PATH)
-    # env.Append(LIBPATH=SLANG_DEBUG_LIB_PATHS)
+    env.Append(CPPPATH=SLANG_DEBUG_INCLUDE_PATH)
+    env.Append(LIBPATH=SLANG_DEBUG_LIB_PATHS)
 env.Append(LIBS=SLANG_LIBS)
 
 file_name = LIB_NAME + "." + env["target"][9:] # Trim "template_"
@@ -72,6 +108,9 @@ else:
         BUILD_PATH, env["platform"], env["arch"], file_name, env["SHLIBSUFFIX"]
     )
     library =  env.SharedLibrary(file_path, source=sources)
+
+# Make library depend on Slang build
+env.Depends(library, slang_build)
 
 Default(library)
 
