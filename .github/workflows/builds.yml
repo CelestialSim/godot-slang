@@ -115,31 +115,11 @@ jobs:
         run: |
           scons platform=${{ matrix.opts.platform }} arch=${{ matrix.opts.arch }} target=${{ matrix.opts.target }}
 
-      - name: Upload artifact (Linux)
-        if: matrix.opts.platform == 'linux'
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.opts.platform }}-${{ matrix.opts.arch }}-${{ matrix.opts.target }}
-          path: |
-            demo/addons/godot_slang_importer/bin/${{ matrix.opts.platform }}.${{ matrix.opts.arch }}/*
-          retention-days: 14
-
-      - name: Upload artifact (Windows)
-        if: matrix.opts.platform == 'windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.opts.platform }}-${{ matrix.opts.arch }}-${{ matrix.opts.target }}
-          path: |
-            demo/addons/godot_slang_importer/bin/${{ matrix.opts.platform }}.${{ matrix.opts.arch }}/*
-          retention-days: 14
-
-      - name: Upload artifact (macOS)
-        if: matrix.opts.platform == 'macos'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.opts.platform }}-${{ matrix.opts.arch }}-${{ matrix.opts.target }}
-          path: |
-            demo/addons/godot_slang_importer/bin/${{ matrix.opts.platform }}.${{ matrix.opts.arch }}/*
+          path: demo/addons/godot_slang_importer/bin/
           retention-days: 14
 
   merge-artifacts:
@@ -160,11 +140,14 @@ jobs:
         run: |
           mkdir -p demo/addons/godot_slang_importer/bin
           
-          # Copy all platform binaries to the demo bin directory
-          for platform_dir in artifacts/*/; do
-            if [ -d "$platform_dir" ]; then
-              echo "Processing $platform_dir"
-              cp -r "$platform_dir"* demo/addons/godot_slang_importer/bin/ || true
+          # Copy all platform binaries to the demo bin directory, preserving structure
+          # artifacts/[artifact-name]/demo/addons/godot_slang_importer/bin/[platform.arch]/...
+          for artifact_dir in artifacts/*/demo/addons/godot_slang_importer/bin/*/; do
+            if [ -d "$artifact_dir" ]; then
+              platform_arch=$(basename "$artifact_dir")
+              echo "Merging platform: $platform_arch"
+              mkdir -p "demo/addons/godot_slang_importer/bin/$platform_arch"
+              cp -v "$artifact_dir"* "demo/addons/godot_slang_importer/bin/$platform_arch/" || true
             fi
           done
           
