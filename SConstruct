@@ -29,13 +29,32 @@ def build_slang(target, source, env):
     print(f"Environment target: {env['target']}")
     """Build Slang library using CMake"""
     slang_dir = "slang"
-    build_type = "release" if env["target"] == "template_release" else "debug"
+    build_dir = os.path.join(slang_dir, "build")
+    build_type = "Release" if env["target"] == "template_release" else "Debug"
     
     # Step 1: Configure with CMake (only if not already configured)
-    configure_file = os.path.join(slang_dir, "build", "CMakeCache.txt")
+    configure_file = os.path.join(build_dir, "CMakeCache.txt")
     if not os.path.exists(configure_file):
         print(f"Configuring Slang with CMake (STATIC library)...")
-        configure_cmd = ["cmake", "--preset", "default", "-DSLANG_LIB_TYPE=STATIC"]
+        os.makedirs(build_dir, exist_ok=True)
+        
+        # Use standard CMake configuration approach instead of presets for cross-platform compatibility
+        configure_cmd = [
+            "cmake",
+            "-S", ".",
+            "-B", "build",
+            "-DSLANG_LIB_TYPE=STATIC",
+            "-DCMAKE_BUILD_TYPE=" + build_type
+        ]
+        
+        # Use Ninja generator if available, otherwise use default
+        try:
+            ninja_check = subprocess.run(["ninja", "--version"], capture_output=True)
+            if ninja_check.returncode == 0:
+                configure_cmd.extend(["-G", "Ninja"])
+        except FileNotFoundError:
+            pass
+        
         result = subprocess.run(configure_cmd, cwd=slang_dir)
         if result.returncode != 0:
             print("Error: CMake configuration failed!")
@@ -43,7 +62,13 @@ def build_slang(target, source, env):
     
     # Step 2: Build with CMake
     print(f"Building Slang library ({build_type})...")
-    build_cmd = ["cmake", "--build", "--preset", build_type, "--target", "slang"]
+    build_cmd = [
+        "cmake",
+        "--build", "build",
+        "--config", build_type,
+        "--target", "slang",
+        "--parallel"
+    ]
     result = subprocess.run(build_cmd, cwd=slang_dir)
     if result.returncode != 0:
         print("Error: CMake build failed!")
