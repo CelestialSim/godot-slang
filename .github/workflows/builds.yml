@@ -1,0 +1,216 @@
+name: 🛠️ Builds
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+env:
+  LANG: en_US.UTF-8
+  LC_ALL: en_US.UTF-8
+
+jobs:
+  build:
+    runs-on: ${{ matrix.opts.runner }}
+    name: ${{ matrix.opts.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        opts:
+          - name: 🐧 Linux (x86_64, release)
+            runner: ubuntu-20.04
+            platform: linux
+            arch: x86_64
+            target: template_release
+            
+          - name: 🐧 Linux (x86_64, debug)
+            runner: ubuntu-20.04
+            platform: linux
+            arch: x86_64
+            target: template_debug
+
+          - name: 🏁 Windows (x86_64, release)
+            runner: windows-latest
+            platform: windows
+            arch: x86_64
+            target: template_release
+
+          - name: 🏁 Windows (x86_64, debug)
+            runner: windows-latest
+            platform: windows
+            arch: x86_64
+            target: template_debug
+
+          - name: 🍎 macOS (universal, release)
+            runner: macos-latest
+            platform: macos
+            arch: universal
+            target: template_release
+
+          - name: 🍎 macOS (universal, debug)
+            runner: macos-latest
+            platform: macos
+            arch: universal
+            target: template_debug
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install SCons
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install scons
+
+      - name: Install Linux dependencies
+        if: matrix.opts.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libx11-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libudev-dev \
+            libxi-dev \
+            libxrandr-dev \
+            libxss-dev \
+            libssl-dev
+
+      - name: Setup MSVC (Windows)
+        if: matrix.opts.platform == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Windows dependencies
+        if: matrix.opts.platform == 'windows'
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+          choco install ninja -y
+
+      - name: Install macOS dependencies
+        if: matrix.opts.platform == 'macos'
+        run: |
+          brew install cmake ninja
+
+      - name: Build
+        run: |
+          scons platform=${{ matrix.opts.platform }} arch=${{ matrix.opts.arch }} target=${{ matrix.opts.target }}
+
+      - name: Upload artifact (Linux)
+        if: matrix.opts.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.opts.platform }}-${{ matrix.opts.arch }}-${{ matrix.opts.target }}
+          path: |
+            demo/addons/godot_slang_importer/bin/${{ matrix.opts.platform }}.${{ matrix.opts.arch }}/*
+          retention-days: 14
+
+      - name: Upload artifact (Windows)
+        if: matrix.opts.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.opts.platform }}-${{ matrix.opts.arch }}-${{ matrix.opts.target }}
+          path: |
+            demo/addons/godot_slang_importer/bin/${{ matrix.opts.platform }}.${{ matrix.opts.arch }}/*
+          retention-days: 14
+
+      - name: Upload artifact (macOS)
+        if: matrix.opts.platform == 'macos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.opts.platform }}-${{ matrix.opts.arch }}-${{ matrix.opts.target }}
+          path: |
+            demo/addons/godot_slang_importer/bin/${{ matrix.opts.platform }}.${{ matrix.opts.arch }}/*
+          retention-days: 14
+
+  merge-artifacts:
+    runs-on: ubuntu-latest
+    name: 🎁 Merge Artifacts
+    needs: build
+    if: github.event_name == 'release' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Merge artifacts into demo structure
+        run: |
+          mkdir -p demo/addons/godot_slang_importer/bin
+          
+          # Copy all platform binaries to the demo bin directory
+          for platform_dir in artifacts/*/; do
+            if [ -d "$platform_dir" ]; then
+              echo "Processing $platform_dir"
+              cp -r "$platform_dir"* demo/addons/godot_slang_importer/bin/ || true
+            fi
+          done
+          
+          # Show the final structure
+          echo "Final bin directory structure:"
+          find demo/addons/godot_slang_importer/bin -type f
+
+      - name: Copy LICENSE to demo
+        run: |
+          if [ -f LICENSE ]; then
+            cp LICENSE demo/
+          fi
+
+      - name: Create demo package
+        run: |
+          cd demo
+          zip -r ../godot-slang-addon.zip addons/
+          cd ..
+          zip -r godot-slang-demo.zip demo/
+          
+          echo "Package contents (addon):"
+          unzip -l godot-slang-addon.zip | head -50
+          
+          echo "Package contents (demo):"
+          unzip -l godot-slang-demo.zip | head -50
+
+      - name: Upload merged addon artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-slang-addon-all-platforms
+          path: godot-slang-addon.zip
+          retention-days: 90
+
+      - name: Upload merged demo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-slang-demo-all-platforms
+          path: godot-slang-demo.zip
+          retention-days: 90
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            godot-slang-addon.zip
+            godot-slang-demo.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

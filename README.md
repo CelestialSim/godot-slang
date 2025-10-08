@@ -13,13 +13,37 @@ Run [Slang](https://shader-slang.org/) shaders directly in Godot
 
 **WORK IN PROGRESS!**
 
-## How to build for Linux
+## Supported Platforms
 
-2. Build the project (both debug and release)
+- 🐧 Linux (x86_64)
+- 🏁 Windows (x86_64)
+- 🍎 macOS (Universal)
+
+## How to build
+
+The project uses SCons for building. You need to have the following installed:
+- Python 3.x
+- SCons
+- CMake
+- Ninja (or other build system)
+- Platform-specific development tools (Visual Studio for Windows, Xcode for macOS, GCC/Clang for Linux)
+
+### Linux
 ```bash
-scons target=template_debug
-# or
-scons target=template_release
+scons platform=linux arch=x86_64 target=template_debug
+scons platform=linux arch=x86_64 target=template_release
+```
+
+### Windows
+```bash
+scons platform=windows arch=x86_64 target=template_debug
+scons platform=windows arch=x86_64 target=template_release
+```
+
+### macOS
+```bash
+scons platform=macos arch=universal target=template_debug
+scons platform=macos arch=universal target=template_release
 ```
 
 # Acknowledgments

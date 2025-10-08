@@ -6,5 +6,9 @@ reloadable = true
 [libraries]
 linux.debug.x86_64 = "res://addons/godot_slang_importer/bin/linux.x86_64/libgodot-slang.debug.so"
 linux.release.x86_64 = "res://addons/godot_slang_importer/bin/linux.x86_64/libgodot-slang.release.so"
+windows.debug.x86_64 = "res://addons/godot_slang_importer/bin/windows.x86_64/libgodot-slang.debug.dll"
+windows.release.x86_64 = "res://addons/godot_slang_importer/bin/windows.x86_64/libgodot-slang.release.dll"
+macos.debug = "res://addons/godot_slang_importer/bin/macos.universal/libgodot-slang.debug.framework"
+macos.release = "res://addons/godot_slang_importer/bin/macos.universal/libgodot-slang.release.framework"
 
 [dependencies]
