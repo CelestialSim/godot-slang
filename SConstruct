@@ -137,5 +137,10 @@ else:
 # Make library depend on Slang build
 env.Depends(library, slang_build)
 
+scons_cache_path = os.environ.get("SCONS_CACHE")
+if scons_cache_path is not None:
+    CacheDir(scons_cache_path)
+    Decider("MD5")
+
 Default(library)
 
