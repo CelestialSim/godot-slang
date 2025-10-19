@@ -92,9 +92,18 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.opts.platform }}-${{ matrix.opts.arch }}-${{ matrix.opts.target }}
+          name: ${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}
           path: demo/addons/godot_slang_importer/bin/
           retention-days: 14
+
+      # Upload entire folder on failure for debugging
+      - name: Upload Debug Artifact (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}
+          path: .
+          retention-days: 3
 
   merge-artifacts:
     runs-on: ubuntu-latest
