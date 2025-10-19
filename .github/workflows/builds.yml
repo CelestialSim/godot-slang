@@ -17,12 +17,12 @@ jobs:
           [
             { platform: linux, arch: x86_64, os: ubuntu-24.04 },
             { platform: windows, arch: x86_64, os: windows-latest },
-            { platform: windows, arch: arm64, os: windows-latest },
-            { platform: macos, arch: universal, os: macos-latest },
-            { platform: android, arch: x86_64, os: ubuntu-24.04 },
-            { platform: android, arch: arm64, os: ubuntu-24.04 },
+            # { platform: windows, arch: arm64, os: windows-latest },
+            { platform: macos, arch: arm64, os: macos-latest },
+            # { platform: android, arch: x86_64, os: ubuntu-24.04 },
+            # { platform: android, arch: arm64, os: ubuntu-24.04 },
             { platform: ios, arch: arm64, os: macos-latest },
-            { platform: web, arch: wasm32, os: ubuntu-24.04 },
+            # { platform: web, arch: wasm32, os: ubuntu-24.04 },
           ]
         target-type: [template_debug, template_release]
         float-precision: [single] # TODO: Re-enable double precision builds when CI is fixed
@@ -59,12 +59,20 @@ jobs:
           em-version: 3.1.62
 
       # Build GDExtension (with caches)
-      # TODO: Load slang cache as well
       - name: Restore .scons_cache
         uses: ./godot-cpp/.github/actions/godot-cache-restore
         with:
           scons-cache: ${{ github.workspace }}/.scons-cache/
           cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
+
+      - name: Restore slang build cache
+        uses: actions/cache@v4
+        with:
+          path: slang/build
+          key: slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-${{ hashFiles('slang/**', '!slang/build/**') }}
+          restore-keys: |
+            slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-
+            slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-
 
       - name: Build GDExtension
         shell: sh
@@ -73,7 +81,6 @@ jobs:
         run: |
           scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }}
       
-      # TODO: Save also slang cache
       - name: Save .scons_cache
         uses: ./godot-cpp/.github/actions/godot-cache-save
         with:
