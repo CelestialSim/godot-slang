@@ -11,7 +11,7 @@
         }
     },
     "remoteEnv": {
-        "SCONS_CACHE": "${containerWorkspaceFolder}/.scons-cache"
+        "SCONS_CACHE": "${containerWorkspaceFolder}/.scons_cache"
     },
     "customizations": {
         "vscode": {

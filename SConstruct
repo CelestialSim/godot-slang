@@ -37,6 +37,9 @@ def build_slang(target, source, env):
     build_dir = os.path.join(slang_dir, "build")
     build_type = "Release" if env["target"] == "template_release" else "Debug"
     
+    # Prepare environment for subprocess - inherit current environment to get ccache settings
+    cmake_env = os.environ.copy()
+    
     # Step 1: Configure with CMake (only if not already configured)
     configure_file = os.path.join(build_dir, "CMakeCache.txt")
     if not os.path.exists(configure_file):
@@ -71,7 +74,7 @@ def build_slang(target, source, env):
             except FileNotFoundError:
                 pass
         
-        result = subprocess.run(configure_cmd, cwd=slang_dir)
+        result = subprocess.run(configure_cmd, cwd=slang_dir, env=cmake_env)
         if result.returncode != 0:
             print("Error: CMake configuration failed!")
             return result.returncode
@@ -85,7 +88,7 @@ def build_slang(target, source, env):
         "--target", "slang",
         "--parallel"
     ]
-    result = subprocess.run(build_cmd, cwd=slang_dir)
+    result = subprocess.run(build_cmd, cwd=slang_dir, env=cmake_env)
     if result.returncode != 0:
         print("Error: CMake build failed!")
         return result.returncode
@@ -131,6 +134,10 @@ else:
     env.Append(CPPPATH=SLANG_DEBUG_INCLUDE_PATH)
     env.Append(LIBPATH=SLANG_DEBUG_LIB_PATHS)
 env.Append(LIBS=SLANG_LIBS)
+
+# Define SLANG_STATIC since we're linking against a static library
+# This is required on Windows to prevent __declspec(dllimport) decoration
+env.Append(CPPDEFINES=["SLANG_STATIC"])
 
 file_name = LIB_NAME + "." + env["target"][9:] # Trim "template_"
 
