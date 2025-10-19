@@ -57,6 +57,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.target.arch == 'arm64' && 'arm64' || 'x64' }}
+          vsversion: '2022'
 
       # Setup dependencies
       - name: Setup godot-cpp

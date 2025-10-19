@@ -47,13 +47,17 @@ def build_slang(target, source, env):
             "-DCMAKE_BUILD_TYPE=" + build_type
         ]
         
-        # Use Ninja generator if available, otherwise use default
-        try:
-            ninja_check = subprocess.run(["ninja", "--version"], capture_output=True)
-            if ninja_check.returncode == 0:
-                configure_cmd.extend(["-G", "Ninja"])
-        except FileNotFoundError:
-            pass
+        # Use appropriate generator based on platform
+        if env["platform"] == "windows":
+            configure_cmd.extend(["-G", "Visual Studio 17 2022"])
+        else:
+            # Use Ninja generator if available on other platforms
+            try:
+                ninja_check = subprocess.run(["ninja", "--version"], capture_output=True)
+                if ninja_check.returncode == 0:
+                    configure_cmd.extend(["-G", "Ninja"])
+            except FileNotFoundError:
+                pass
         
         result = subprocess.run(configure_cmd, cwd=slang_dir)
         if result.returncode != 0:
