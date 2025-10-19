@@ -9,18 +9,15 @@ LIB_NAME = "libgodot-slang" # Must have "lib" as prefix
 
 BUILD_PATH = "demo/addons/godot_slang_importer"
 
-SLANG_DEBUG_INCLUDE_PATH = "slang/build/Debug/include/"
-SLANG_DEBUG_LIB_PATHS = [
-    "slang/build/Debug/lib/",
-    "slang/build/external/miniz/",
-    "slang/build/external/miniz/Debug/",
-    "slang/build/external/lz4/build/cmake/",
-    "slang/build/external/lz4/build/cmake/Debug/"
+# Slang is always built in Release mode to match godot-cpp's CRT settings
+# (both template_debug and template_release use release CRT with static linkage)
+SLANG_INCLUDE_PATHS = [
+    "slang/build/Release/include/",  # Single-config generators (Ninja, Makefiles)
+    "slang/build/include/",           # Multi-config generators (Visual Studio)
 ]
-
-SLANG_RELEASE_INCLUDE_PATH = "slang/build/Release/include/"
-SLANG_RELEASE_LIB_PATHS = [
-    "slang/build/Release/lib/",
+SLANG_LIB_PATHS = [
+    "slang/build/Release/lib/",       # Single-config generators
+    "slang/build/lib/Release/",       # Multi-config generators (Visual Studio)
     "slang/build/external/miniz/",
     "slang/build/external/miniz/Release/",
     "slang/build/external/lz4/build/cmake/",
@@ -35,7 +32,9 @@ def build_slang(target, source, env):
     """Build Slang library using CMake"""
     slang_dir = "slang"
     build_dir = os.path.join(slang_dir, "build")
-    build_type = "Release" if env["target"] == "template_release" else "Debug"
+    # Both template_debug and template_release use Release build for Slang
+    # This matches godot-cpp's optimization settings and CRT linkage
+    build_type = "Release"
     
     # Prepare environment for subprocess - inherit current environment to get ccache settings
     cmake_env = os.environ.copy()
@@ -133,13 +132,14 @@ docs_xml = sorted(docs_xml)
 docs_header = "src/doc_data_godot_slang.gen.h"
 env.Command(docs_header, docs_xml, env.Action(editor_builders.make_doc_header, "Generating documentation header."))
 
-if env["target"] == "template_release":
-    env.Append(CPPPATH=SLANG_RELEASE_INCLUDE_PATH)
-    env.Append(LIBPATH=SLANG_RELEASE_LIB_PATHS)
-else:
-    env.Append(CPPPATH=SLANG_DEBUG_INCLUDE_PATH)
-    env.Append(LIBPATH=SLANG_DEBUG_LIB_PATHS)
+# Always use Release build paths for Slang (matches CRT settings)
+env.Append(CPPPATH=SLANG_INCLUDE_PATHS)
+env.Append(LIBPATH=SLANG_LIB_PATHS)
 env.Append(LIBS=SLANG_LIBS)
+
+# Add Windows system libraries required by Slang
+if env["platform"] == "windows":
+    env.Append(LIBS=["ole32", "advapi32"])
 
 # Define SLANG_STATIC since we're linking against a static library
 # This is required on Windows to prevent __declspec(dllimport) decoration
