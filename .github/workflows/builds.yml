@@ -77,10 +77,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: slang/build
-          key: slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-${{ hashFiles('slang/**', '!slang/build/**') }}
+          key: slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-${{ matrix.target-type }}-${{ hashFiles('slang/**', '!slang/build/**') }}
           restore-keys: |
-            slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-
-            slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-
+            slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-${{ matrix.target-type }}-
+            slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}-
 
       - name: Build GDExtension
         shell: sh
