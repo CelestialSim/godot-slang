@@ -75,6 +75,8 @@ jobs:
           elif command -v brew &> /dev/null; then
             brew install ccache
           fi
+          # Ensure ccache directory exists
+          mkdir -p ~/.ccache
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -100,7 +102,22 @@ jobs:
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
           CCACHE_DIR: ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\ccache' || '~/.ccache' }}
         run: |
-          scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }}
+          # Retry logic for Windows builds (race condition in CMake)
+          # https://github.com/shader-slang/slang/issues/5930
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }} && break
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "Build failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+              sleep 5
+            fi
+          done
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "Build failed after $MAX_RETRIES retries"
+            exit 1
+          fi
       
       - name: Save .scons_cache
         uses: ./godot-cpp/.github/actions/godot-cache-save
