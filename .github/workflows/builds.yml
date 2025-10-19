@@ -15,8 +15,8 @@ jobs:
         # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow
         target:
           [
-            { platform: linux, arch: x86_64, os: ubuntu-25.04 },
-            # TODO: Disable until CI is fixed
+            { platform: linux, arch: x86_64, os: ubuntu-24.04 },
+            # TODO: Disable until CI is fixedil
             # { platform: windows, arch: x86_64, os: windows-latest },
             # { platform: windows, arch: arm64, os: windows-latest },
             # { platform: macos, arch: universal, os: macos-latest },
