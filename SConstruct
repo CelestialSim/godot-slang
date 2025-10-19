@@ -55,6 +55,12 @@ def build_slang(target, source, env):
             "-DCMAKE_BUILD_TYPE=" + build_type
         ]
         
+        # On Windows, match godot-cpp's CRT linkage (static CRT by default)
+        # This prevents LNK2038 errors about RuntimeLibrary mismatch
+        if env["platform"] == "windows":
+            # Use static CRT (/MT for release, /MTd for debug) to match godot-cpp's default
+            configure_cmd.append("-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        
         # Enable ccache if available for faster rebuilds
         if shutil.which("ccache"):
             configure_cmd.extend([
