@@ -66,6 +66,25 @@ jobs:
           platform: ${{ matrix.target.platform }}
           em-version: 3.1.62
 
+      # Install ccache for faster builds
+      - name: Install ccache
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y ccache
+          elif command -v brew &> /dev/null; then
+            brew install ccache
+          fi
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\ccache' || '~/.ccache' }}
+          key: ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}-
+            ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-
+
       # Build GDExtension (with caches)
       - name: Restore .scons_cache
         uses: ./godot-cpp/.github/actions/godot-cache-restore
@@ -73,19 +92,13 @@ jobs:
           scons-cache: ${{ github.workspace }}/.scons-cache/
           cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
 
-      - name: Restore slang build cache
-        uses: actions/cache@v4
-        with:
-          path: slang/build
-          key: slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-${{ matrix.target-type }}-${{ hashFiles('slang/**', '!slang/build/**') }}
-          restore-keys: |
-            slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-${{ matrix.target-type }}-
-            slang-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}-
-
       - name: Build GDExtension
         shell: sh
         env:
           SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+          CCACHE_DIR: ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\ccache' || '~/.ccache' }}
         run: |
           scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }}
       

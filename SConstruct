@@ -2,6 +2,7 @@
 import os
 import sys
 import subprocess
+import shutil
 import editor_builders
 
 LIB_NAME = "libgodot-slang" # Must have "lib" as prefix
@@ -46,6 +47,13 @@ def build_slang(target, source, env):
             "-DSLANG_LIB_TYPE=STATIC",
             "-DCMAKE_BUILD_TYPE=" + build_type
         ]
+        
+        # Enable ccache if available for faster rebuilds
+        if shutil.which("ccache"):
+            configure_cmd.extend([
+                "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+                "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+            ])
         
         # Use appropriate generator based on platform
         if env["platform"] == "windows":
