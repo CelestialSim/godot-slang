@@ -11,15 +11,15 @@ BUILD_PATH = "demo/addons/godot_slang_importer"
 SLANG_DEBUG_INCLUDE_PATH = "slang/build/Debug/include/"
 SLANG_DEBUG_LIB_PATHS = [
     "slang/build/Debug/lib/",
-    "slang/build/external/miniz/Debug/",
-    "slang/build/external/lz4/build/cmake/Debug/"
+    "slang/build/external/miniz/",
+    "slang/build/external/lz4/build/cmake/"
 ]
 
 SLANG_RELEASE_INCLUDE_PATH = "slang/build/Release/include/"
 SLANG_RELEASE_LIB_PATHS = [
     "slang/build/Release/lib/",
-    "slang/build/external/miniz/Release/",
-    "slang/build/external/lz4/build/cmake/Release/"
+    "slang/build/external/miniz/",
+    "slang/build/external/lz4/build/cmake/"
 ]
 
 SLANG_LIBS = ["slang", "compiler-core", "core",  "miniz", "lz4"]

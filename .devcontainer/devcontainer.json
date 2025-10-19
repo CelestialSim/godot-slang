@@ -10,6 +10,9 @@
             // "username": ""
         }
     },
+    "remoteEnv": {
+        "SCONS_CACHE": "${containerWorkspaceFolder}/.scons-cache"
+    },
     "customizations": {
         "vscode": {
             "settings": {
@@ -25,8 +28,9 @@
                 "shader-slang.slang-language-extension"
             ]
         }
-    },
-    // "postCreateCommand": "pip3 install --user -r godot-cpp/pyproject.toml || true",
-    "remoteUser": "ubuntu",
-    // "workspaceFolder": "/workspaces"
+    }
+},
+// "postCreateCommand": "pip3 install --user -r godot-cpp/pyproject.toml || true",
+"remoteUser": "ubuntu"
+// "workspaceFolder": "/workspaces"
 }

@@ -27,3 +27,4 @@ demo/shader.glsl.import
 # Keep documentation
 src/doc_data_godot_slang.gen.h
 demo/.idea/
+.scons_cache/
