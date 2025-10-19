@@ -13,14 +13,18 @@ SLANG_DEBUG_INCLUDE_PATH = "slang/build/Debug/include/"
 SLANG_DEBUG_LIB_PATHS = [
     "slang/build/Debug/lib/",
     "slang/build/external/miniz/",
-    "slang/build/external/lz4/build/cmake/"
+    "slang/build/external/miniz/Debug/",
+    "slang/build/external/lz4/build/cmake/",
+    "slang/build/external/lz4/build/cmake/Debug/"
 ]
 
 SLANG_RELEASE_INCLUDE_PATH = "slang/build/Release/include/"
 SLANG_RELEASE_LIB_PATHS = [
     "slang/build/Release/lib/",
     "slang/build/external/miniz/",
-    "slang/build/external/lz4/build/cmake/"
+    "slang/build/external/miniz/Release/",
+    "slang/build/external/lz4/build/cmake/",
+    "slang/build/external/lz4/build/cmake/Release/"
 ]
 
 SLANG_LIBS = ["slang", "compiler-core", "core",  "miniz", "lz4"]
