@@ -1,0 +1,226 @@
+# Adapted from https://github.com/DevPrice/godot-slang/blob/main/.github/workflows/builds.yml
+name: Build GDExtension
+on:
+  workflow_call:
+  pull_request:
+  merge_group:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # A build is made for every possible combination of parameters
+        # You can add or remove entries from the arrays of each parameter to customize which builds you want to run
+        # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow
+        target:
+          [
+            { platform: linux, arch: x86_64, os: ubuntu-24.04 },
+            { platform: windows, arch: x86_64, os: windows-latest },
+            # { platform: windows, arch: arm64, os: windows-latest },
+            { platform: macos, arch: arm64, os: macos-latest },
+            # { platform: android, arch: x86_64, os: ubuntu-24.04 },
+            # { platform: android, arch: arm64, os: ubuntu-24.04 },
+            { platform: ios, arch: arm64, os: macos-latest },
+            # { platform: web, arch: wasm32, os: ubuntu-24.04 },
+          ]
+        target-type: [template_debug, template_release]
+        float-precision: [single] # TODO: Re-enable double precision builds when CI is fixed
+
+    runs-on: ${{ matrix.target.os }}
+    steps:
+      # Clone this repository
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Lint
+      #- name: Setup clang-format
+      #  shell: bash
+      #  run: |
+      #    python -m pip install clang-format
+      #- name: Run clang-format
+      #  shell: bash
+      #  run: |
+      #    clang-format src/** --dry-run --Werror
+
+      # Add linux x86_32 toolchain
+      - name: Install multilib support
+        if: ${{ matrix.target.platform == 'linux' && matrix.target.arch == 'x86_32' }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib
+
+      # Setup Windows build environment
+      - name: Setup Windows build environment
+        if: ${{ matrix.target.platform == 'windows' }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.target.arch == 'arm64' && 'arm64' || 'x64' }}
+          vsversion: '2022'
+
+      # Setup dependencies
+      - name: Setup godot-cpp
+        uses: ./godot-cpp/.github/actions/setup-godot-cpp
+        with:
+          platform: ${{ matrix.target.platform }}
+          em-version: 3.1.62
+
+      # Install ccache for faster builds
+      - name: Install ccache
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y ccache
+          elif command -v brew &> /dev/null; then
+            brew install ccache
+          fi
+          # Ensure ccache directory exists
+          mkdir -p ~/.ccache
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\ccache' || '~/.ccache' }}
+          key: ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}-
+            ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-
+
+      # Build GDExtension (with caches)
+      - name: Restore .scons_cache
+        uses: ./godot-cpp/.github/actions/godot-cache-restore
+        with:
+          scons-cache: ${{ github.workspace }}/.scons-cache/
+          cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
+
+      - name: Build GDExtension
+        shell: sh
+        env:
+          SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+          CCACHE_DIR: ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\ccache' || '~/.ccache' }}
+        run: |
+          # Retry logic for Windows builds (race condition in CMake)
+          # https://github.com/shader-slang/slang/issues/5930
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }} && break
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "Build failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+              sleep 5
+            fi
+          done
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "Build failed after $MAX_RETRIES retries"
+            exit 1
+          fi
+      
+      - name: Save .scons_cache
+        uses: ./godot-cpp/.github/actions/godot-cache-save
+        with:
+          scons-cache: ${{ github.workspace }}/.scons-cache/
+          cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
+
+      # Clean up compilation files
+      - name: Windows - Delete compilation files
+        if: ${{ matrix.target.platform == 'windows' }}
+        shell: pwsh
+        run: |
+          Remove-Item demo/addons/godot_slang_importer/bin/windows.${{ matrix.target.arch }}/* -Include *.exp,*.pdb,*.lib,*.ilk -Force
+
+      # Upload the build
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}
+          path: demo/addons/godot_slang_importer/bin/
+          retention-days: 14
+
+      # Upload entire folder on failure for debugging
+      - name: Upload Debug Artifact (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}
+          path: .
+          retention-days: 3
+
+  merge-artifacts:
+    runs-on: ubuntu-latest
+    name: 🎁 Merge Artifacts
+    needs: build
+    if: github.event_name == 'release' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Merge artifacts into demo structure
+        run: |
+          mkdir -p demo/addons/godot_slang_importer/bin
+          
+          # Copy all platform binaries to the demo bin directory, preserving structure
+          # artifacts/[artifact-name]/demo/addons/godot_slang_importer/bin/[platform.arch]/...
+          for artifact_dir in artifacts/*/demo/addons/godot_slang_importer/bin/*/; do
+            if [ -d "$artifact_dir" ]; then
+              platform_arch=$(basename "$artifact_dir")
+              echo "Merging platform: $platform_arch"
+              mkdir -p "demo/addons/godot_slang_importer/bin/$platform_arch"
+              cp -v "$artifact_dir"* "demo/addons/godot_slang_importer/bin/$platform_arch/" || true
+            fi
+          done
+          
+          # Show the final structure
+          echo "Final bin directory structure:"
+          find demo/addons/godot_slang_importer/bin -type f
+
+      - name: Copy LICENSE to demo
+        run: |
+          if [ -f LICENSE ]; then
+            cp LICENSE demo/
+          fi
+
+      - name: Create demo package
+        run: |
+          cd demo
+          zip -r ../godot-slang-addon.zip addons/
+          cd ..
+          zip -r godot-slang-demo.zip demo/
+          
+          echo "Package contents (addon):"
+          unzip -l godot-slang-addon.zip | head -50
+          
+          echo "Package contents (demo):"
+          unzip -l godot-slang-demo.zip | head -50
+
+      - name: Upload merged addon artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-slang-addon-all-platforms
+          path: godot-slang-addon.zip
+          retention-days: 90
+
+      - name: Upload merged demo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-slang-demo-all-platforms
+          path: godot-slang-demo.zip
+          retention-days: 90
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            godot-slang-addon.zip
+            godot-slang-demo.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

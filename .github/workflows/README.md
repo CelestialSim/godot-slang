@@ -4,10 +4,30 @@ This directory contains GitHub Actions workflows for the Godot Slang project.
 
 ## Workflows
 
-### `release.yml` - Release Build
+### `builds.yml` - Cross-Platform Builds
+**Triggers:** Push to main, Pull requests, GitHub releases, Manual dispatch
+
+This workflow builds the extension for all supported platforms:
+
+- **Platforms:** Linux, Windows, macOS
+- **Architectures:** x86_64, universal (macOS)
+- **Build types:** Debug and Release
+- Builds Slang library using CMake for each platform
+- Builds godot-cpp dependency for each platform
+- Builds the godot-slang extension using SCons
+- Creates platform-specific artifacts
+- Merges all platforms into a single addon and demo package
+- Automatically uploads to GitHub releases (when triggered by a release)
+
+**Artifacts:**
+- `godot-slang-addon-all-platforms` - Complete addon with all platform binaries
+- `godot-slang-demo-all-platforms` - Complete demo project with all platform binaries
+- Individual platform artifacts for testing
+
+### `release.yml` - Legacy Release Build (Linux only)
 **Triggers:** GitHub releases, Manual dispatch
 
-This workflow creates production-ready releases:
+This workflow creates production-ready releases for Linux only:
 
 - Builds only the release version for Linux
 - Uses Ubuntu 25.04 container (matching the dev container)
@@ -52,7 +72,12 @@ The workflow requires no special setup - it uses the same dependencies as the de
 
 ## Platform Support
 
-Currently only Linux x86_64 is supported. To add more platforms, update the SCons platform parameters in the workflow.
+The `builds.yml` workflow supports:
+- **Linux:** x86_64 (Ubuntu 20.04 runner)
+- **Windows:** x86_64 (Windows Latest with MSVC)
+- **macOS:** Universal binaries (macOS Latest with Xcode)
+
+Both debug and release builds are created for each platform. The `release.yml` workflow is legacy and only supports Linux x86_64.
 
 ## Troubleshooting
 

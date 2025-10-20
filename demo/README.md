@@ -29,7 +29,9 @@ For more information, documentation, and the latest updates, visit the main proj
 ## Platform Support
 
 This demo includes binaries for:
-- Linux x86_64
+- 🐧 Linux (x86_64)
+- 🏁 Windows (x86_64)
+- 🍎 macOS (Universal)
 
 ## License
 

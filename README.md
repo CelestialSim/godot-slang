@@ -13,18 +13,42 @@ Run [Slang](https://shader-slang.org/) shaders directly in Godot
 
 **WORK IN PROGRESS!**
 
-## How to build for Linux
+## Supported Platforms
 
-2. Build the project (both debug and release)
+- 🐧 Linux (x86_64)
+- 🏁 Windows (x86_64)
+- 🍎 macOS (Universal)
+
+## How to build
+
+The project uses SCons for building. You need to have the following installed:
+- Python 3.x
+- SCons
+- CMake
+- Ninja (or other build system)
+- Platform-specific development tools (Visual Studio for Windows, Xcode for macOS, GCC/Clang for Linux)
+
+### Linux
 ```bash
-scons target=template_debug
-# or
-scons target=template_release
+scons platform=linux arch=x86_64 target=template_debug
+scons platform=linux arch=x86_64 target=template_release
+```
+
+### Windows
+```bash
+scons platform=windows arch=x86_64 target=template_debug
+scons platform=windows arch=x86_64 target=template_release
+```
+
+### macOS
+```bash
+scons platform=macos arch=universal target=template_debug
+scons platform=macos arch=universal target=template_release
 ```
 
 # Acknowledgments
 
-The Slang compilation examples in this project are based on the official [Slang repository examples](https://github.com/shader-slang/slang/tree/master/examples), particularly:
-- [hello-world](https://github.com/shader-slang/slang/blob/master/examples/hello-world/main.cpp) for the basic compilation patterns
+- The Slang compilation examples in this project are based on the official [Slang repository examples](https://github.com/shader-slang/slang/tree/master/examples), particularly [hello-world](https://github.com/shader-slang/slang/blob/master/examples/hello-world/main.cpp) for the basic compilation patterns
+- Another project to use Slang in Godot was helpful for the CI [DevPrice/godot-slang](https://github.com/DevPrice/godot-slang/tree/main) 
 
 The documentation generation system (`editor_builders.py`) is adapted from the [threen project](https://github.com/deralmas/threen/tree/doc) by deralmas, which demonstrates embedded XML documentation in Godot GDExtensions.
