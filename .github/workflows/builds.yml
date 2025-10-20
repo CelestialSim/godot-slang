@@ -69,27 +69,6 @@ jobs:
           platform: ${{ matrix.target.platform }}
           em-version: 3.1.62
 
-      # Install ccache for faster builds
-      - name: Install ccache
-        if: ${{ runner.os != 'Windows' }}
-        run: |
-          if command -v apt-get &> /dev/null; then
-            sudo apt-get update && sudo apt-get install -y ccache
-          elif command -v brew &> /dev/null; then
-            brew install ccache
-          fi
-          # Ensure ccache directory exists
-          mkdir -p ~/.ccache
-
-      - name: Restore ccache
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\ccache' || '~/.ccache' }}
-          key: ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}-${{ github.sha }}
-          restore-keys: |
-            ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}-
-            ccache-${{ matrix.target.platform }}-${{ matrix.target.arch }}-
-
       # Build GDExtension (with caches)
       - name: Restore .scons_cache
         uses: ./godot-cpp/.github/actions/godot-cache-restore
@@ -97,13 +76,19 @@ jobs:
           scons-cache: ${{ github.workspace }}/.scons-cache/
           cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
 
+      # Cache Slang build folder for incremental builds
+      - name: Cache Slang build
+        uses: actions/cache@v4
+        with:
+          path: slang/build
+          key: slang-build-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ hashFiles('slang/**/*.cpp', 'slang/**/*.h', 'slang/**/CMakeLists.txt') }}
+          restore-keys: |
+            slang-build-${{ matrix.target.platform }}-${{ matrix.target.arch }}-
+
       - name: Build GDExtension
         shell: sh
         env:
           SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
-          CMAKE_C_COMPILER_LAUNCHER: ccache
-          CMAKE_CXX_COMPILER_LAUNCHER: ccache
-          CCACHE_DIR: ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\ccache' || '~/.ccache' }}
         run: |
           # Retry logic for Windows builds (race condition in CMake)
           # https://github.com/shader-slang/slang/issues/5930
@@ -156,7 +141,6 @@ jobs:
     runs-on: ubuntu-latest
     name: 🎁 Merge Artifacts
     needs: build
-    if: github.event_name == 'release' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -170,14 +154,22 @@ jobs:
         run: |
           mkdir -p demo/addons/godot_slang_importer/bin
           
-          # Copy all platform binaries to the demo bin directory, preserving structure
-          # artifacts/[artifact-name]/demo/addons/godot_slang_importer/bin/[platform.arch]/...
-          for artifact_dir in artifacts/*/demo/addons/godot_slang_importer/bin/*/; do
+          # Copy all platform binaries to the demo bin directory
+          # Artifacts are structured as: artifacts/[artifact-name]/[platform.arch]/...
+          for artifact_dir in artifacts/*/; do
             if [ -d "$artifact_dir" ]; then
-              platform_arch=$(basename "$artifact_dir")
-              echo "Merging platform: $platform_arch"
-              mkdir -p "demo/addons/godot_slang_importer/bin/$platform_arch"
-              cp -v "$artifact_dir"* "demo/addons/godot_slang_importer/bin/$platform_arch/" || true
+              artifact_name=$(basename "$artifact_dir")
+              echo "Processing artifact: $artifact_name"
+              
+              # Each artifact contains platform.arch subdirectories
+              for platform_dir in "$artifact_dir"*/; do
+                if [ -d "$platform_dir" ]; then
+                  platform_arch=$(basename "$platform_dir")
+                  echo "  Merging platform: $platform_arch"
+                  mkdir -p "demo/addons/godot_slang_importer/bin/$platform_arch"
+                  cp -v "$platform_dir"* "demo/addons/godot_slang_importer/bin/$platform_arch/" || true
+                fi
+              done
             fi
           done
           
