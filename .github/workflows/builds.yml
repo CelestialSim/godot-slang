@@ -4,6 +4,9 @@ on:
   workflow_call:
   pull_request:
   merge_group:
+  release:
+    types: [published, created]
+  workflow_dispatch:
 
 jobs:
   build:
