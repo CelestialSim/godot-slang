@@ -77,11 +77,16 @@ jobs:
           cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
 
       # Cache Slang build folder for incremental builds
-      - name: Cache Slang build
+      # Cache key based on slang submodule commit hash to avoid rebuilding when source hasn't changed
+      - name: Get slang submodule commit hash
+        id: slang-commit
+        run: echo "hash=$(git rev-parse HEAD:slang)" >> $GITHUB_OUTPUT
+
+      - name: Handle Slang cache
         uses: actions/cache@v4
         with:
           path: slang/build
-          key: slang-build-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ hashFiles('slang/**/*.cpp', 'slang/**/*.h', 'slang/**/CMakeLists.txt') }}
+          key: slang-build-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ steps.slang-commit.outputs.hash }}
           restore-keys: |
             slang-build-${{ matrix.target.platform }}-${{ matrix.target.arch }}-
 
