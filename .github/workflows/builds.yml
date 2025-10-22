@@ -70,7 +70,7 @@ jobs:
           em-version: 3.1.62
 
       # Build GDExtension (with caches)
-      - name: Restore .scons_cache
+      - name: Restore .scons-cache
         uses: ./godot-cpp/.github/actions/godot-cache-restore
         with:
           scons-cache: ${{ github.workspace }}/.scons-cache/
@@ -107,7 +107,7 @@ jobs:
             exit 1
           fi
       
-      - name: Save .scons_cache
+      - name: Save .scons-cache
         uses: ./godot-cpp/.github/actions/godot-cache-save
         with:
           scons-cache: ${{ github.workspace }}/.scons-cache/
@@ -167,7 +167,8 @@ jobs:
                   platform_arch=$(basename "$platform_dir")
                   echo "  Merging platform: $platform_arch"
                   mkdir -p "demo/addons/godot_slang_importer/bin/$platform_arch"
-                  cp -v "$platform_dir"* "demo/addons/godot_slang_importer/bin/$platform_arch/" || true
+                  # Use -r to recursively copy directories (frameworks) and files
+                  cp -rv "$platform_dir"* "demo/addons/godot_slang_importer/bin/$platform_arch/" || true
                 fi
               done
             fi
