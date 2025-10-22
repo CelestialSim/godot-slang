@@ -24,7 +24,7 @@ jobs:
             { platform: macos, arch: arm64, os: macos-latest },
             # { platform: android, arch: x86_64, os: ubuntu-24.04 },
             # { platform: android, arch: arm64, os: ubuntu-24.04 },
-            { platform: ios, arch: arm64, os: macos-latest },
+            # { platform: ios, arch: arm64, os: macos-latest },
             # { platform: web, arch: wasm32, os: ubuntu-24.04 },
           ]
         target-type: [template_debug, template_release]
@@ -80,6 +80,7 @@ jobs:
       # Cache key based on slang submodule commit hash to avoid rebuilding when source hasn't changed
       - name: Get slang submodule commit hash
         id: slang-commit
+        shell: bash
         run: echo "hash=$(git rev-parse HEAD:slang)" >> $GITHUB_OUTPUT
 
       - name: Handle Slang cache
