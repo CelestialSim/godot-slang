@@ -69,8 +69,8 @@ jobs:
           {
             echo ""
             echo "## Contributors"
-            git log "${PREV_TAG}..HEAD" --format="%an" | sort -u | sed 's/^/* /' || true
-          } >> release_notes.md
+            git log "${PREV_TAG}..HEAD" --format="%an" | sort -u | sed 's/^/* /'
+          } >> release_notes.md || true
           
           cat release_notes.md
           
