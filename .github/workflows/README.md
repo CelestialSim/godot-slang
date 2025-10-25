@@ -5,7 +5,7 @@ This directory contains GitHub Actions workflows for the Godot Slang project.
 ## Workflows
 
 ### `builds.yml` - Cross-Platform Builds
-**Triggers:** Push to main, Pull requests, GitHub releases, Manual dispatch
+**Triggers:** Pull requests, Workflow call (reusable), Manual dispatch
 
 This workflow builds the extension for all supported platforms:
 
@@ -17,7 +17,7 @@ This workflow builds the extension for all supported platforms:
 - Builds the godot-slang extension using SCons
 - Creates platform-specific artifacts
 - Merges all platforms into a single addon and demo package
-- Automatically uploads to GitHub releases (when triggered by a release)
+- Can be reused by other workflows (e.g., release workflow)
 
 **Artifacts:**
 - `godot-slang-addon-all-platforms` - Complete addon with all platform binaries
