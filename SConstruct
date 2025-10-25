@@ -11,13 +11,12 @@ BUILD_PATH = "demo/addons/godot_slang_importer"
 
 # Slang is always built in Release mode to match godot-cpp's CRT settings
 # (both template_debug and template_release use release CRT with static linkage)
+# FIXME: Verify multi-config paths are correct
 SLANG_INCLUDE_PATHS = [
-    "slang/build/Release/include/",  # Single-config generators (Ninja, Makefiles)
-    "slang/build/include/",           # Multi-config generators (Visual Studio)
+    "slang/build/Release/include/",
 ]
 SLANG_LIB_PATHS = [
-    "slang/build/Release/lib/",       # Single-config generators
-    "slang/build/lib/Release/",       # Multi-config generators (Visual Studio)
+    "slang/build/Release/lib/",
     "slang/build/external/miniz/",
     "slang/build/external/miniz/Release/",
     "slang/build/external/lz4/build/cmake/",
@@ -60,13 +59,6 @@ def build_slang(target, source, env):
             # Use static CRT (/MT for release, /MTd for debug) to match godot-cpp's default
             configure_cmd.append("-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>")
         
-        # Enable ccache if available for faster rebuilds
-        if shutil.which("ccache"):
-            configure_cmd.extend([
-                "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
-                "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
-            ])
-        
         # Use appropriate generator based on platform
         if env["platform"] == "windows":
             configure_cmd.extend(["-G", "Visual Studio 17 2022"])
@@ -104,10 +96,52 @@ def build_slang(target, source, env):
 
 env = SConscript("godot-cpp/SConstruct")
 
+# Configure SCons cache early so it applies to all builds
+scons_cache_path = os.environ.get("SCONS_CACHE")
+if scons_cache_path is not None:
+    CacheDir(scons_cache_path)
+    Decider("MD5")
+    print(f"SCons cache enabled at: {scons_cache_path}")
+
 # Build Slang library first
-slang_marker = "slang/.slang_built"
-slang_build = env.Command(slang_marker, [], env.Action(build_slang, "Building Slang library..."))
-env.AlwaysBuild(slang_build)
+# Determine platform-specific library output paths
+if env["platform"] == "windows":
+    # Windows uses Visual Studio multi-config generator
+    slang_lib_outputs = [
+        "slang/build/Release/lib/slang.lib",
+        "slang/build/Release/lib/compiler-core.lib",
+        "slang/build/Release/lib/core.lib",
+        "slang/build/external/miniz/Release/miniz.lib",
+        "slang/build/external/lz4/build/cmake/Release/lz4.lib",
+    ]
+else:
+    # macOS and Linux use single-config generators (Ninja)
+    slang_lib_outputs = [
+        "slang/build/Release/lib/libslang.a",
+        "slang/build/Release/lib/libcompiler-core.a",
+        "slang/build/Release/lib/libcore.a",
+        "slang/build/external/miniz/libminiz.a",
+        "slang/build/external/lz4/build/cmake/liblz4.a",
+    ]
+
+# slang_lib_outputs = ["slang/build/Release/include/slang-tag-version.h"]
+# Track key Slang source files that would trigger rebuild
+# Note: Don't include build outputs here, only source inputs
+slang_sources = [
+    "slang/slang-tag-version.h.in",  # Template for generated version header
+]
+# Add all CMakeLists.txt files from slang directory
+slang_sources += Glob("slang/*/CMakeLists.txt")
+slang_sources += ["slang/CMakeLists.txt"]
+# Add source header files from slang/include/ (not the build directory)
+slang_sources += Glob("slang/include/*.h")
+# Add key source directories (actual source, not build outputs)
+slang_sources += Glob("slang/source/slang/*.cpp")
+slang_sources += Glob("slang/source/slang/*.h")
+
+# The Slang library build depends on source files
+# All Slang libraries and headers are outputs of this single build command
+slang_build = env.Command(slang_lib_outputs, slang_sources, env.Action(build_slang, "Building Slang library..."))
 
 # For reference:
 # - CCFLAGS are compilation flags shared between C and C++
@@ -165,11 +199,6 @@ else:
 
 # Make library depend on Slang build
 env.Depends(library, slang_build)
-
-scons_cache_path = os.environ.get("SCONS_CACHE")
-if scons_cache_path is not None:
-    CacheDir(scons_cache_path)
-    Decider("MD5")
 
 Default(library)
 

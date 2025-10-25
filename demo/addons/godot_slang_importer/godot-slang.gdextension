@@ -8,7 +8,7 @@ linux.debug.x86_64 = "res://addons/godot_slang_importer/bin/linux.x86_64/libgodo
 linux.release.x86_64 = "res://addons/godot_slang_importer/bin/linux.x86_64/libgodot-slang.release.so"
 windows.debug.x86_64 = "res://addons/godot_slang_importer/bin/windows.x86_64/libgodot-slang.debug.dll"
 windows.release.x86_64 = "res://addons/godot_slang_importer/bin/windows.x86_64/libgodot-slang.release.dll"
-macos.debug = "res://addons/godot_slang_importer/bin/macos.universal/libgodot-slang.debug.framework"
-macos.release = "res://addons/godot_slang_importer/bin/macos.universal/libgodot-slang.release.framework"
+macos.debug.arm64 = "res://addons/godot_slang_importer/bin/macos.arm64/libgodot-slang.debug.framework"
+macos.release.arm64 = "res://addons/godot_slang_importer/bin/macos.arm64/libgodot-slang.release.framework"
 
 [dependencies]
