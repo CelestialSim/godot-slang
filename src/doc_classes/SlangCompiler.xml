@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="TestCompile" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+<class name="SlangCompiler" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
 	<brief_description>
-		Compiles Slang shader files to GLSL format using the Slang compilation API.
+		Compiles Slang shader files to GLSL or SPIR-V format using the Slang compilation API.
 	</brief_description>
 	<description>
-		TestCompile provides functionality to cross-compile shader code from Slang to GLSL format. 
+		SlangCompiler provides functionality to cross-compile shader code from Slang to GLSL or SPIR-V format. 
 		The implementation follows patterns from the official Slang hello-world example for robust compilation.
 		
 		This class integrates the Slang compiler into Godot, allowing developers to write shaders in 
-		the Slang language and automatically convert them to GLSL for use in Godot projects.
+		the Slang language and automatically convert them to GLSL or SPIR-V for use in Godot projects.
 	</description>
 	<tutorials>
 		<link title="Slang Documentation">https://shader-slang.com/slang/</link>
 		<link title="Official Slang Examples">https://github.com/shader-slang/slang/tree/master/examples</link>
 	</tutorials>
 	<methods>
-		<method name="compile_slang_to_glsl">
+		<method name="to_glsl">
 			<return type="void" />
 			<param index="0" name="filename" type="String" />
 			<description>
@@ -41,10 +41,28 @@
 				7. Saves the result with metadata headers
 			</description>
 		</method>
-		<method name="test_compile">
-			<return type="void" />
+		<method name="to_spirv_bytes">
+			<return type="PackedByteArray" />
+			<param index="0" name="filename" type="String" />
 			<description>
-				Simple test method that prints a compilation test message.
+				Compiles a Slang shader file to SPIR-V bytecode and returns it as a PackedByteArray.
+				
+				The function looks for [param filename].slang and returns the compiled SPIR-V binary data.
+				Returns an empty PackedByteArray if compilation fails.
+				
+				Requirements:
+				- Input file must have a compute shader entry point named "computeMain"
+				- Entry point must be tagged with [shader("compute")] attribute
+				- Slang compiler must be properly initialized and linked
+				
+				Process:
+				1. Creates a global Slang session (compiler instance)
+				2. Sets up a local session with SPIR-V target configuration
+				3. Loads the Slang module from the source file
+				4. Finds the compute shader entry point ("computeMain")
+				5. Composes the module and entry point into a program
+				6. Generates the SPIR-V bytecode
+				7. Returns the binary data as PackedByteArray
 			</description>
 		</method>
 	</methods>
