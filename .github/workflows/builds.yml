@@ -24,7 +24,7 @@ jobs:
             { platform: macos, arch: arm64, os: macos-latest },
             # { platform: android, arch: x86_64, os: ubuntu-24.04 },
             # { platform: android, arch: arm64, os: ubuntu-24.04 },
-            { platform: ios, arch: arm64, os: macos-latest },
+            # { platform: ios, arch: arm64, os: macos-latest },
             # { platform: web, arch: wasm32, os: ubuntu-24.04 },
           ]
         target-type: [template_debug, template_release]
@@ -77,11 +77,17 @@ jobs:
           cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
 
       # Cache Slang build folder for incremental builds
-      - name: Cache Slang build
+      # Cache key based on slang submodule commit hash to avoid rebuilding when source hasn't changed
+      - name: Get slang submodule commit hash
+        id: slang-commit
+        shell: bash
+        run: echo "hash=$(git rev-parse HEAD:slang)" >> $GITHUB_OUTPUT
+
+      - name: Handle Slang cache
         uses: actions/cache@v4
         with:
           path: slang/build
-          key: slang-build-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ hashFiles('slang/**/*.cpp', 'slang/**/*.h', 'slang/**/CMakeLists.txt') }}
+          key: slang-build-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ steps.slang-commit.outputs.hash }}
           restore-keys: |
             slang-build-${{ matrix.target.platform }}-${{ matrix.target.arch }}-
 
