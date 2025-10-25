@@ -1,4 +1,4 @@
-#include "test_compile.h"
+#include "slang_compiler.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -12,19 +12,13 @@
 using namespace godot;
 using Slang::ComPtr;
 
-void TestCompile::_bind_methods()
+void SlangCompiler::_bind_methods()
 {
-    ClassDB::bind_method(D_METHOD("test_compile"), &TestCompile::test_compile);
-    ClassDB::bind_method(D_METHOD("compile_slang_to_glsl", "filename"), &TestCompile::compile_slang_to_glsl);
+    ClassDB::bind_method(D_METHOD("to_glsl", "filename"), &SlangCompiler::to_glsl);
+    ClassDB::bind_method(D_METHOD("to_spirv_bytes", "filename"), &SlangCompiler::to_spirv_bytes);
 }
 
-void TestCompile::test_compile()
-{
-    UtilityFunctions::print("This is a compilation test that can be invoked from Godot");
-    // compile_slang_to_glsl("shader");
-}
-
-void TestCompile::compile_slang_to_glsl(const String &filename)
+void SlangCompiler::to_glsl(const String &filename)
 {
     // Helper function to print diagnostics if any
     auto diagnoseIfNeeded = [](ComPtr<slang::IBlob> diagnostics)
@@ -77,8 +71,6 @@ void TestCompile::compile_slang_to_glsl(const String &filename)
         }
     }
 
-    UtilityFunctions::print("Loaded Slang module successfully!");
-
     // Find the entry point by name (assuming "computeMain" or similar)
     ComPtr<slang::IEntryPoint> entryPoint;
     slangModule->findEntryPointByName("computeMain", entryPoint.writeRef());
@@ -126,9 +118,6 @@ void TestCompile::compile_slang_to_glsl(const String &filename)
         }
     }
 
-    String output_message = String("Successfully compiled ") + String::num_int64(shaderCode->getBufferSize()) + String(" bytes of GLSL code.");
-    UtilityFunctions::print(output_message);
-
     // Save the compiled shader code to a GLSL file
     String output_filename = filename + String(".glsl");
     Ref<FileAccess> file = FileAccess::open(output_filename, FileAccess::WRITE);
@@ -154,10 +143,117 @@ void TestCompile::compile_slang_to_glsl(const String &filename)
         String shader_text = String::utf8(static_cast<const char *>(shaderCode->getBufferPointer()), shaderCode->getBufferSize());
         file->store_string(shader_text);
         file->close();
-        UtilityFunctions::print("Shader saved to: " + output_filename);
     }
     else
     {
         UtilityFunctions::print("Failed to save shader to: " + output_filename);
     }
+}
+
+PackedByteArray SlangCompiler::to_spirv_bytes(const String &filename)
+{
+    // Helper function to print diagnostics if any
+    auto diagnoseIfNeeded = [](ComPtr<slang::IBlob> diagnostics)
+    {
+        if (diagnostics && diagnostics->getBufferSize() > 0)
+        {
+            String diagnostic_text = String::utf8(static_cast<const char *>(diagnostics->getBufferPointer()), diagnostics->getBufferSize());
+            UtilityFunctions::print("Slang diagnostics: " + diagnostic_text);
+        }
+    };
+
+    // Create the global session - using ComPtr for proper resource management
+    ComPtr<slang::IGlobalSession> slangGlobalSession;
+    SlangResult result = slang::createGlobalSession(slangGlobalSession.writeRef());
+    if (SLANG_FAILED(result))
+    {
+        UtilityFunctions::print("Failed to create Slang global session");
+        return PackedByteArray();
+    }
+
+    // Create a compilation session to generate SPIR-V code from Slang source
+    slang::SessionDesc sessionDesc = {};
+    slang::TargetDesc targetDesc = {};
+    targetDesc.format = SLANG_SPIRV;
+    targetDesc.profile = slangGlobalSession->findProfile("spirv_1_5");
+    targetDesc.flags = 0;
+
+    sessionDesc.targets = &targetDesc;
+    sessionDesc.targetCount = 1;
+
+    ComPtr<slang::ISession> session;
+    result = slangGlobalSession->createSession(sessionDesc, session.writeRef());
+    if (SLANG_FAILED(result))
+    {
+        UtilityFunctions::print("Failed to create Slang session");
+        return PackedByteArray();
+    }
+
+    // Load the Slang module
+    slang::IModule *slangModule = nullptr;
+    {
+        ComPtr<slang::IBlob> diagnosticBlob;
+        String slang_file = filename + String(".slang");
+        slangModule = session->loadModule(slang_file.utf8().get_data(), diagnosticBlob.writeRef());
+        diagnoseIfNeeded(diagnosticBlob);
+        if (!slangModule)
+        {
+            UtilityFunctions::print("Error loading Slang module: " + slang_file);
+            return PackedByteArray();
+        }
+    }
+
+    // Find the entry point by name (assuming "computeMain" or similar)
+    ComPtr<slang::IEntryPoint> entryPoint;
+    slangModule->findEntryPointByName("computeMain", entryPoint.writeRef());
+    if (!entryPoint)
+    {
+        UtilityFunctions::print("Could not find entry point 'computeMain'. Make sure your shader has [shader(\"compute\")] void computeMain(...)");
+        return PackedByteArray();
+    }
+
+    // Create a composite component type from the module and entry point
+    std::vector<slang::IComponentType *> componentTypes;
+    componentTypes.push_back(slangModule);
+    componentTypes.push_back(entryPoint);
+
+    ComPtr<slang::IComponentType> composedProgram;
+    {
+        ComPtr<slang::IBlob> diagnosticsBlob;
+        result = session->createCompositeComponentType(
+            componentTypes.data(),
+            (SlangInt)componentTypes.size(),
+            composedProgram.writeRef(),
+            diagnosticsBlob.writeRef());
+        diagnoseIfNeeded(diagnosticsBlob);
+        if (SLANG_FAILED(result))
+        {
+            UtilityFunctions::print("Failed to compose program");
+            return PackedByteArray();
+        }
+    }
+
+    // Generate the target code (SPIR-V)
+    ComPtr<slang::IBlob> shaderCode;
+    {
+        ComPtr<slang::IBlob> diagnosticsBlob;
+        result = composedProgram->getEntryPointCode(
+            0, // entryPointIndex
+            0, // targetIndex
+            shaderCode.writeRef(),
+            diagnosticsBlob.writeRef());
+        diagnoseIfNeeded(diagnosticsBlob);
+        if (SLANG_FAILED(result))
+        {
+            UtilityFunctions::print("Compilation failed!");
+            return PackedByteArray();
+        }
+    }
+
+    // Return the SPIR-V bytecode as PackedByteArray
+    PackedByteArray spirv_data;
+    spirv_data.resize(shaderCode->getBufferSize());
+    memcpy(spirv_data.ptrw(), shaderCode->getBufferPointer(), shaderCode->getBufferSize());
+
+    return spirv_data;
 }

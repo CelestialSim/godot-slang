@@ -1,5 +1,5 @@
 #include "register_types.h"
-#include "test_compile.h"
+#include "slang_compiler.h"
 #include "doc_data_godot_slang.gen.h"
 
 #include <gdextension_interface.h>
@@ -13,7 +13,7 @@ void initialize_module(ModuleInitializationLevel p_level)
 {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE)
 	{
-		ClassDB::register_class<TestCompile>();
+		ClassDB::register_class<SlangCompiler>();
 	}
 
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR)

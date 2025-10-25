@@ -1,0 +1,15 @@
+[remap]
+
+importer="godot_slang.importer"
+type="RDShaderFile"
+uid="uid://gsfgcoqyh8vx"
+path="res://.godot/imported/compute_example.slang-a87823a9ad8a98bd6a414b882bdcca53.res"
+
+[deps]
+
+source_file="res://compute_example.slang"
+dest_files=["res://.godot/imported/compute_example.slang-a87823a9ad8a98bd6a414b882bdcca53.res"]
+
+[params]
+
+debug_messages=false
