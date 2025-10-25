@@ -4,8 +4,6 @@ on:
   workflow_call:
   pull_request:
   merge_group:
-  release:
-    types: [published, created]
   workflow_dispatch:
 
 jobs:
@@ -216,13 +214,3 @@ jobs:
           name: godot-slang-demo-all-platforms
           path: godot-slang-demo.zip
           retention-days: 90
-
-      - name: Upload to release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            godot-slang-addon.zip
-            godot-slang-demo.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

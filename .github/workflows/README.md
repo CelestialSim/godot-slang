@@ -5,7 +5,7 @@ This directory contains GitHub Actions workflows for the Godot Slang project.
 ## Workflows
 
 ### `builds.yml` - Cross-Platform Builds
-**Triggers:** Push to main, Pull requests, GitHub releases, Manual dispatch
+**Triggers:** Pull requests, Workflow call (reusable), Manual dispatch
 
 This workflow builds the extension for all supported platforms:
 
@@ -17,32 +17,31 @@ This workflow builds the extension for all supported platforms:
 - Builds the godot-slang extension using SCons
 - Creates platform-specific artifacts
 - Merges all platforms into a single addon and demo package
-- Automatically uploads to GitHub releases (when triggered by a release)
+- Can be reused by other workflows (e.g., release workflow)
 
 **Artifacts:**
 - `godot-slang-addon-all-platforms` - Complete addon with all platform binaries
 - `godot-slang-demo-all-platforms` - Complete demo project with all platform binaries
 - Individual platform artifacts for testing
 
-### `release.yml` - Legacy Release Build (Linux only)
-**Triggers:** GitHub releases, Manual dispatch
+### `release.yml` - Create Release
+**Triggers:** Manual dispatch with tag input
 
-This workflow creates production-ready releases for Linux only:
+This workflow creates a new GitHub release:
 
-- Builds only the release version for Linux
-- Uses Ubuntu 25.04 container (matching the dev container)
-- Builds Slang generators and static library
-- Builds godot-cpp dependency
-- Builds the godot-slang extension
-- Packages the complete demo folder as a ready-to-use Godot project
-- Creates a zip file for easy distribution
-- Automatically uploads to GitHub releases (when triggered by a release)
+- Takes a tag name as input (e.g., v1.0.0)
+- Reuses the `builds.yml` workflow to build all platform artifacts
+- Generates release notes from merged PRs since the previous tag
+- Creates a git tag at the current commit
+- Creates a GitHub release with the tag
+- Automatically attaches the addon and demo packages to the release
 
-Todo: move built libraries to addons/godot-slang
+**Inputs:**
+- `tag` - The release tag name (required, e.g., v1.0.0)
 
-**Artifacts:**
-- `godot-slang-demo-linux` - Complete demo project package
-- `godot-slang-demo.zip` - Zipped demo project for distribution
+**Release Notes Include:**
+- List of merged pull requests since the previous tag
+- List of contributors in the release
 
 ## Build Process
 
@@ -59,12 +58,18 @@ The workflow follows this process:
 ## Usage
 
 ### For Releases
-1. Create a GitHub release with a tag
-2. The release workflow will automatically build and attach the addon package
-3. Or manually trigger the release workflow from the Actions tab
+1. Navigate to the Actions tab on GitHub
+2. Select the "Create Release" workflow
+3. Click "Run workflow"
+4. Enter a tag name (e.g., v1.0.0)
+5. The workflow will:
+   - Build all platform artifacts
+   - Generate release notes from merged PRs
+   - Create the tag and release
+   - Attach the addon and demo packages
 
 ### For Development
-To test builds during development, manually trigger the release workflow from the Actions tab.
+To test builds during development, manually trigger the builds workflow from the Actions tab.
 
 ## Requirements
 
@@ -77,7 +82,7 @@ The `builds.yml` workflow supports:
 - **Windows:** x86_64 (Windows Latest with MSVC)
 - **macOS:** Universal binaries (macOS Latest with Xcode)
 
-Both debug and release builds are created for each platform. The `release.yml` workflow is legacy and only supports Linux x86_64.
+Both debug and release builds are created for each platform.
 
 ## Troubleshooting
 
