@@ -11,6 +11,8 @@ jobs:
   # Reuse the builds workflow to create artifacts
   build-artifacts:
     uses: ./.github/workflows/builds.yml
+    permissions:
+      contents: read
 
   # Create the release with the artifacts
   create-release:
