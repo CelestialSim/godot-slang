@@ -10,7 +10,7 @@ Keep your existing workflow, to use Slang shaders it is only necessary to change
 var shader_file := load("res://compute_example.slang")
 ```
 # Demo project
-A demo project, godot-slang-demo.zip, based on the [using compute shaders official Godot tutorial](https://docs.godotengine.org/en/4.5/tutorials/shaders/compute_shaders.html) can be dowloaded from the [releases](https://github.com/CelestialSim/godot-slang/releases) section. In the project the shader from the documentation is replaced with an equivalent Slang compute shader.
+A demo project, godot-slang-demo.zip, based on the [using compute shaders official Godot tutorial](https://docs.godotengine.org/en/4.5/tutorials/shaders/compute_shaders.html) can be dowloaded from the [releases](https://github.com/CelestialSim/godot-slang/releases) section. In the project the addon is already installed and the shader from the documentation is replaced with an equivalent Slang compute shader.
 
 Original GLSL shader
 ```glsl
