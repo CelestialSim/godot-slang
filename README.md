@@ -1,6 +1,6 @@
 > [!WARNING]
 > **This repository is archived and no longer maintained.**
-> Please switch to [DevPrice/godot-slang](https://github.com/DevPrice/godot-slang/tree/main). It is actively maintained and has more features.
+> Please switch to [DevPrice/godot-slang](https://github.com/DevPrice/godot-slang). It is actively maintained and has more features.
 
 # Godot Slang
 
