@@ -1,3 +1,7 @@
+> [!WARNING]
+> **This repository is archived and no longer maintained.**
+> Please switch to the actively maintained fork: [DevPrice/godot-slang](https://github.com/DevPrice/godot-slang/tree/main)
+
 # Godot Slang
 
 Run [Slang](https://shader-slang.org/) Compute shaders directly in Godot
